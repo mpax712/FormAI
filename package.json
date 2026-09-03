@@ -1,0 +1,12 @@
+{
+    "name": "formai",
+    "private": true,
+    "scripts": {
+        "test:e2e": "playwright test",
+        "test:a11y": "playwright test tests/Browser/accessibility.spec.js"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.55.0",
+        "axe-playwright": "^2.1.0"
+    }
+}

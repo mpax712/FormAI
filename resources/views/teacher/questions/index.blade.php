@@ -1,0 +1,6 @@
+@extends('layouts.app')
+@section('title', 'Banco de questoes · FormAI')
+@section('content')
+<div class="d-flex justify-content-between align-items-center mb-4"><div><h1>Banco de questoes</h1><p class="text-secondary mb-0">Edicoes nao alteram atividades ja publicadas.</p></div><a class="btn btn-primary" href="{{ route('teacher.questions.create') }}">Nova questao</a></div>
+<div class="card p-3"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Questao</th><th>Tipo</th><th>Pontos</th><th>Acoes</th></tr></thead><tbody>@forelse($questions as $question)<tr><td>{{ Str::limit($question->body, 90) }}</td><td>{{ $question->type === App\Domain\QuestionBank\Enums\QuestionType::Essay ? 'Dissertativa' : 'Escolha unica' }}</td><td>{{ number_format((float)$question->max_score,2,',','.') }}</td><td><a class="btn btn-sm btn-outline-primary" href="{{ route('teacher.questions.edit',$question) }}">Editar</a><form class="d-inline" method="post" action="{{ route('teacher.questions.destroy',$question) }}" data-confirm="Arquivar esta questao?">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger" type="submit">Arquivar</button></form></td></tr>@empty<tr><td colspan="4">Nenhuma questao cadastrada.</td></tr>@endforelse</tbody></table></div></div><div class="mt-4">{{ $questions->links() }}</div>
+@endsection
