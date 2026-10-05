@@ -1,4 +1,5 @@
-# Environment variants (the main .env is not ignored in this private repository)
+# Environment files (keep credentials out of the public repository)
+.env
 .env.*
 !.env.example
 !.env.*.example
