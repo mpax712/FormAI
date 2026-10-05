@@ -16,6 +16,10 @@ class MembershipRequestController extends Controller
         $this->authorize('update', $classroom);
         abort_unless($student->isStudent() && $classroom->pendingStudents()->whereKey($student->id)->exists(), 404);
 
+        if ($student->age_band === 'under_13' && ! $student->guardian_approved_at) {
+            return back()->withErrors(['student' => 'Aguarde a autorização do responsável antes de aprovar este aluno.']);
+        }
+
         $classroom->pendingStudents()->updateExistingPivot($student->id, [
             'status' => 'approved',
             'approved_at' => now(),

@@ -10,14 +10,19 @@
     <source><include><directory>app</directory></include></source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_CONFIG_CACHE" value="bootstrap/cache/testing-config.php" force="true"/>
+        <env name="APP_ROUTES_CACHE" value="bootstrap/cache/testing-routes.php" force="true"/>
         <env name="APP_KEY" value="base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="/>
         <env name="HASH_DRIVER" value="bcrypt"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="DB_FALLBACK_ENABLED" value="false" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="AI_PROVIDER" value="openai"/>
+        <env name="OPENROUTER_API_KEY" value="" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
     </php>

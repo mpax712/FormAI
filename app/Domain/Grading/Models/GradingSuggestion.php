@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GradingSuggestion extends Model
 {
     public $timestamps = false;
-    protected $fillable = ['score', 'criterion_scores', 'evidence', 'feedback', 'confidence', 'warnings', 'created_at'];
+    protected $fillable = ['score', 'criterion_scores', 'evidence', 'feedback', 'teacher_feedback', 'confidence', 'warnings', 'created_at'];
+    protected $hidden = ['teacher_feedback'];
     protected $casts = ['score' => 'decimal:2', 'criterion_scores' => 'array', 'evidence' => 'array', 'warnings' => 'array', 'confidence' => 'decimal:4', 'created_at' => 'datetime'];
     protected static function booted(): void
     {

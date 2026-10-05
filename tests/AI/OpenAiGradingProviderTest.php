@@ -23,7 +23,7 @@ class OpenAiGradingProviderTest extends TestCase
             ])]]]], 'usage' => ['input_tokens' => 100, 'output_tokens' => 40],
         ], 200)]);
 
-        $result = app(OpenAiGradingProvider::class)->grade(new GradingRequest('Pergunta', 'Esperado', [['label' => 'Clareza', 'weight' => 1]], 'Resposta sem nome', 'Seja objetivo', 10, 1, 'pt-BR', str_repeat('a', 64), str_repeat('b', 64)));
+        $result = app(OpenAiGradingProvider::class)->grade(new GradingRequest('Pergunta', 'Esperado', [['label' => 'Clareza', 'weight' => 10]], 'Resposta sem nome', 'Seja objetivo', 10, 1, 'pt-BR', str_repeat('a', 64), str_repeat('b', 64)));
         $this->assertSame(8.5, $result->score);
         Http::assertSent(function (Request $request) {
             $data = $request->data();

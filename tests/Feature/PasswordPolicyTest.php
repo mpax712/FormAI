@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Identity\Enums\UserRole;
 use App\Domain\Identity\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,9 +27,12 @@ class PasswordPolicyTest extends TestCase
             'website' => '',
         ]);
 
-        $response->assertRedirect(route('verification.notice'));
+        $response->assertRedirect(route('dashboard'));
         $user = User::query()->where('email', 'professora@gmail.com')->firstOrFail();
         $this->assertTrue(Hash::check('abcdef', $user->password));
+        $this->assertNotEmpty($user->public_id);
+        $this->assertSame(UserRole::Teacher, $user->role);
+        $this->assertTrue($user->is_active);
         $this->assertAuthenticatedAs($user);
     }
 

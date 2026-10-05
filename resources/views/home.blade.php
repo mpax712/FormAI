@@ -21,19 +21,19 @@
                     <a class="hero-help-link" href="#como-funciona">Veja como o FormAI funciona</a>
                     <ul class="hero-assurances" aria-label="Garantias do FormAI">
                         <li><span aria-hidden="true">✓</span> Professor decide a nota</li>
-                        <li><span aria-hidden="true">✓</span> Respostas anonimizadas</li>
+                        <li><span aria-hidden="true">✓</span> Nome e e-mail fora do pedido à IA</li>
                         <li><span aria-hidden="true">✓</span> Comece sem cartão</li>
                     </ul>
                 </div>
             </div>
             <div class="col-lg-5">
-                <div class="product-stage" aria-label="Exemplo de correção assistida">
+                <div class="product-stage" aria-label="Demonstração ilustrativa de correção assistida">
                     <div class="stage-glow" aria-hidden="true"></div>
                     <div class="product-window glass-surface">
                         <div class="product-bar">
                             <div class="product-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-                            <span>Correção em andamento</span>
-                            <span class="live-pill"><i aria-hidden="true"></i> IA pronta</span>
+                            <span>Exemplo ilustrativo</span>
+                            <span class="live-pill"><i aria-hidden="true"></i> Revisão humana</span>
                         </div>
                         <div class="product-body">
                             <div class="question-label">Questão dissertativa · 10 pontos</div>
@@ -53,6 +53,17 @@
                     <div class="floating-chip floating-chip-bottom"><span aria-hidden="true">✓</span> Privacidade preservada</div>
                 </div>
             </div>
+        </div>
+    </div>
+</section>
+
+<section class="landing-benefits" aria-labelledby="benefits-title">
+    <div class="container">
+        <div class="landing-benefits-heading"><span class="eyebrow">Feito para sua rotina</span><h2 id="benefits-title">Mais clareza em cada etapa do ensino.</h2></div>
+        <div class="landing-benefits-grid">
+            <article><span class="benefit-symbol" aria-hidden="true">01</span><h3>Planeje com liberdade</h3><p>Crie atividades em rascunho, reúna questões do seu banco e configure critérios antes de publicar.</p></article>
+            <article><span class="benefit-symbol" aria-hidden="true">02</span><h3>Acompanhe sua turma</h3><p>Veja entregas pendentes, resultados publicados e os próximos prazos em um só painel.</p></article>
+            <article><span class="benefit-symbol" aria-hidden="true">03</span><h3>Corrija com critério</h3><p>Receba uma sugestão da IA, revise a análise privada e escolha o feedback que será enviado ao aluno.</p></article>
         </div>
     </div>
 </section>

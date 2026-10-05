@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Classrooms\Models\Classroom;
 use App\Domain\Identity\Enums\UserRole;
 use App\Domain\Identity\Models\User;
+use App\Application\Services\GuardianAuthorizationService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,40 +48,62 @@ class ClassCodeAccessController extends Controller
         return view('class-code.register', compact('classroom'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, GuardianAuthorizationService $guardianService): RedirectResponse
     {
         $classroom = $this->selectedClassroom($request);
         abort_unless($classroom, 419, 'O acesso por código expirou. Informe o código novamente.');
 
-        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->input('email'))),
+            'guardian_email' => Str::lower(trim((string) $request->input('guardian_email'))),
+        ]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email:rfc,dns', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(config('formai.password_min_length'))],
+            'age_band' => ['required', 'in:under_13,13_17,adult'],
+            'guardian_email' => ['required_if:age_band,under_13', 'nullable', 'email:rfc,dns', 'max:255', 'different:email'],
             'terms' => ['accepted'],
             'website' => ['nullable', 'max:0'],
         ]);
 
-        $user = DB::transaction(function () use ($classroom, $data): User {
+        $needsGuardian = $data['age_band'] === 'under_13';
+        [$user, $autoApprove] = DB::transaction(function () use ($classroom, $data, $needsGuardian): array {
+            $currentClassroom = Classroom::query()->whereKey($classroom->id)
+                ->where('is_active', true)->lockForUpdate()->firstOrFail();
             $user = User::query()->create([
                 'name' => $data['name'],
                 'email' => Str::lower($data['email']),
                 'password' => $data['password'],
                 'role' => UserRole::Student,
-                'is_active' => true,
+                'is_active' => ! $needsGuardian,
+                'age_band' => $data['age_band'],
+                'terms_version' => config('legal.terms_version'),
+                'terms_accepted_at' => now(),
             ]);
 
-            $classroom->pendingStudents()->attach($user->id, ['status' => 'pending']);
+            $autoApprove = $currentClassroom->auto_approve_join;
+            $currentClassroom->members()->attach($user->id, [
+                'status' => $autoApprove ? 'approved' : 'pending',
+                'approved_at' => $autoApprove ? now() : null,
+            ]);
 
-            return $user;
+            return [$user, $autoApprove];
         });
 
+        if ($needsGuardian) {
+            $guardianService->request($user, $data['guardian_email']);
+            $request->session()->forget('class_join');
+            return redirect()->route('guardian.pending')->with('status', 'Conta criada. Enviamos um link de autorização ao responsável; o acesso ficará bloqueado até a confirmação.');
+        }
         event(new Registered($user));
         Auth::login($user);
         $request->session()->forget('class_join');
         $request->session()->regenerate();
 
-        return redirect()->route('verification.notice')->with('status', 'Cadastro realizado. Após verificar o e-mail, aguarde a aprovação do professor para entrar na turma.');
+        return redirect()->route('verification.notice')->with('status', $autoApprove
+            ? 'Cadastro realizado. Verifique seu e-mail para acessar a turma.'
+            : 'Cadastro realizado. Após verificar o e-mail, aguarde a aprovação do professor para entrar na turma.');
     }
 
     private function selectedClassroom(Request $request): ?Classroom

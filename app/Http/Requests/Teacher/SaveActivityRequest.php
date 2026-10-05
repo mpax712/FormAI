@@ -48,10 +48,16 @@ class SaveActivityRequest extends FormRequest
             if (! is_array($question)) {
                 continue;
             }
-            if (($question['type'] ?? null) !== QuestionType::SingleChoice->value) {
+            $type = $question['type'] ?? null;
+            if ($type === QuestionType::Context->value) {
+                $questions[$questionIndex]['max_score'] = 0;
+                continue;
+            }
+            if (! in_array($type, [QuestionType::SingleChoice->value, QuestionType::MultipleChoice->value], true)) {
                 continue;
             }
             $correctOption = (string) ($question['correct_option'] ?? '');
+            $correctOptions = array_map('strval', is_array($question['correct_options'] ?? null) ? $question['correct_options'] : []);
             $options = $question['options'] ?? [];
             if (! is_array($options)) {
                 continue;
@@ -60,7 +66,9 @@ class SaveActivityRequest extends FormRequest
                 if (! is_array($option)) {
                     continue;
                 }
-                $questions[$questionIndex]['options'][$optionIndex]['is_correct'] = (string) $optionIndex === $correctOption;
+                $questions[$questionIndex]['options'][$optionIndex]['is_correct'] = $type === QuestionType::SingleChoice->value
+                    ? (string) $optionIndex === $correctOption
+                    : in_array((string) $optionIndex, $correctOptions, true);
             }
         }
         $this->merge(['questions' => $questions]);
@@ -79,9 +87,17 @@ class SaveActivityRequest extends FormRequest
     {
         $activity = $this->route('activity');
         $currentClassroomId = $activity?->classroom_id;
+        $metadataOnly = $activity?->submissions()->exists() ?? false;
+        $deadlineRules = ['nullable', 'date_format:Y-m-d H:i:s'];
+        $submittedDeadline = $this->input('deadline_at');
+        $sameDeadlineMinute = ($submittedDeadline === null && $activity?->deadline_at === null)
+            || (is_string($submittedDeadline) && substr($submittedDeadline, 0, 16) === $activity?->deadline_at?->format('Y-m-d H:i'));
+        if (! $metadataOnly || ! $sameDeadlineMinute) {
+            $deadlineRules[] = 'after:now';
+        }
 
         return [
-            'classroom_id' => ['required', 'integer', Rule::exists('classrooms', 'id')->where(
+            'classroom_id' => $metadataOnly ? ['required', 'integer', Rule::in([$currentClassroomId])] : ['required', 'integer', Rule::exists('classrooms', 'id')->where(
                 fn ($query) => $query->where('teacher_id', $this->user()->id)
                     ->where(function ($available) use ($currentClassroomId): void {
                         $available->where('is_active', true);
@@ -92,22 +108,30 @@ class SaveActivityRequest extends FormRequest
             )],
             'title' => ['required', 'string', 'max:180'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'deadline_at' => ['nullable', 'date_format:Y-m-d H:i:s', 'after:now'],
-            'intent' => ['nullable', Rule::in(['draft', 'preview', 'publish'])],
+            'grading_instructions' => ['nullable', 'string', 'max:2000'],
+            'feedback_detail' => ['sometimes', 'required', 'in:short,medium,detailed'],
+            'intelligence_profile' => ['sometimes', 'required', 'in:economy,balanced,advanced'],
+            'grading_strictness' => ['sometimes', 'required', 'in:flexible,balanced,strict'],
+            'deadline_at' => $deadlineRules,
+            'intent' => ['nullable', Rule::in(['draft', 'preview', 'publish', 'metadata'])],
 
-            'bank_questions' => ['nullable', 'array', 'max:50'],
+            'bank_questions' => $metadataOnly ? ['prohibited'] : ['nullable', 'array', 'max:50'],
+            'bank_correction' => ['nullable', 'array', 'max:100'],
+            'bank_correction.*' => ['boolean'],
             'bank_questions.*' => ['integer', 'distinct', Rule::exists('questions', 'id')->where(
                 fn ($query) => $query->where('owner_id', $this->user()->id)->where('is_active', true)->whereNull('deleted_at')
             )],
 
-            'questions' => ['nullable', 'array', 'max:50'],
+            'questions' => $metadataOnly ? ['prohibited'] : ['nullable', 'array', 'max:50'],
             'questions.*' => ['array'],
             'questions.*.type' => ['required', Rule::enum(QuestionType::class)],
             'questions.*.body' => ['required', 'string', 'max:10000'],
             'questions.*.expected_answer' => ['nullable', 'string', 'max:10000'],
             'questions.*.teacher_instruction' => ['prohibited'],
-            'questions.*.max_score' => ['required', 'numeric', 'gt:0', 'max:1000'],
+            'questions.*.max_score' => ['required', 'numeric', 'min:0', 'max:1000'],
             'questions.*.correct_option' => ['nullable', 'integer', 'min:0', 'max:9'],
+            'questions.*.correct_options' => ['nullable', 'array', 'max:10'],
+            'questions.*.correct_options.*' => ['integer', 'min:0', 'max:9', 'distinct'],
             'questions.*.options' => ['nullable', 'array', 'max:10'],
             'questions.*.options.*' => ['array'],
             'questions.*.options.*.text' => ['nullable', 'string', 'max:2000'],
@@ -116,20 +140,25 @@ class SaveActivityRequest extends FormRequest
             'questions.*.rubric.*' => ['array'],
             'questions.*.rubric.*.label' => ['nullable', 'string', 'max:120'],
             'questions.*.rubric.*.description' => ['nullable', 'string', 'max:3000'],
-            'questions.*.rubric.*.weight' => ['nullable', 'numeric', 'gt:0', 'max:1'],
+            'questions.*.rubric.*.weight' => ['nullable', 'numeric', 'gt:0', 'max:1000'],
         ];
     }
 
     public function after(): array
     {
         return [function (Validator $validator): void {
+            $activity = $this->route('activity');
+            if ($activity?->submissions()->exists()) {
+                return;
+            }
+
             $directInput = $this->input('questions', []);
             $bankInput = $this->input('bank_questions', []);
             $directQuestions = is_array($directInput) ? $directInput : [];
             $bankQuestions = is_array($bankInput) ? array_filter($bankInput) : [];
 
-            if (count($directQuestions) + count($bankQuestions) === 0) {
-                $validator->errors()->add('questions', 'Adicione uma pergunta ou selecione uma do banco de questões.');
+            if (count(array_filter($directQuestions, fn ($question) => is_array($question) && ($question['type'] ?? null) !== QuestionType::Context->value)) + count($bankQuestions) === 0) {
+                $validator->errors()->add('questions', 'Adicione ao menos uma questão com pontuação além dos blocos de contexto.');
             }
             if (count($directQuestions) + count($bankQuestions) > 50) {
                 $validator->errors()->add('questions', 'A atividade pode ter no máximo 50 perguntas no total.');
@@ -141,7 +170,11 @@ class SaveActivityRequest extends FormRequest
                 }
                 $type = $question['type'] ?? null;
 
-                if ($type === QuestionType::SingleChoice->value) {
+                if ($type !== QuestionType::Context->value && (float) ($question['max_score'] ?? 0) <= 0) {
+                    $validator->errors()->add("questions.$index.max_score", 'A pontuação da questão deve ser maior que zero.');
+                }
+
+                if (in_array($type, [QuestionType::SingleChoice->value, QuestionType::MultipleChoice->value], true)) {
                     $optionInput = $question['options'] ?? [];
                     $options = collect(is_array($optionInput) ? $optionInput : [])->filter(
                         fn ($option) => is_array($option) && filled($option['text'] ?? null)
@@ -149,8 +182,12 @@ class SaveActivityRequest extends FormRequest
                     if ($options->count() < 2) {
                         $validator->errors()->add("questions.$index.options", 'Preencha ao menos duas alternativas.');
                     }
-                    if ($options->filter(fn ($option) => filter_var($option['is_correct'] ?? false, FILTER_VALIDATE_BOOL))->count() !== 1) {
+                    $correct = $options->filter(fn ($option) => filter_var($option['is_correct'] ?? false, FILTER_VALIDATE_BOOL))->count();
+                    if ($type === QuestionType::SingleChoice->value && $correct !== 1) {
                         $validator->errors()->add("questions.$index.options", 'Marque exatamente uma alternativa correta.');
+                    }
+                    if ($type === QuestionType::MultipleChoice->value && $correct < 2) {
+                        $validator->errors()->add("questions.$index.options", 'Marque pelo menos duas alternativas corretas na múltipla escolha.');
                     }
                 }
 
@@ -177,8 +214,9 @@ class SaveActivityRequest extends FormRequest
                     if ($labels->duplicates()->isNotEmpty()) {
                         $validator->errors()->add("questions.$index.rubric", 'Os critérios de uma questão devem ter nomes diferentes.');
                     }
-                    if ($criteria->isNotEmpty() && abs($criteria->sum(fn ($criterion) => (float) ($criterion['weight'] ?? 0)) - 1.0) > 0.001) {
-                        $validator->errors()->add("questions.$index.rubric", 'A soma dos pesos dos critérios deve ser 1,00.');
+                    $maximumScore = (float) ($question['max_score'] ?? 0);
+                    if ($criteria->isNotEmpty() && abs($criteria->sum(fn ($criterion) => (float) ($criterion['weight'] ?? 0)) - $maximumScore) > 0.001) {
+                        $validator->errors()->add("questions.$index.rubric", 'A soma dos pontos dos critérios deve ser igual à pontuação da questão.');
                     }
                 }
             }

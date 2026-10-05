@@ -1,0 +1,153 @@
+/* Mobile workspace for signed-in users. Loaded only below the md breakpoint. */
+.app-authenticated {
+    --mobile-nav-height: 4.75rem;
+    background: #f2f5fa;
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+}
+
+.app-authenticated .site-header { position: relative; z-index: 1030; }
+.app-authenticated .site-header .navbar { min-height: 3.8rem; }
+.app-authenticated .navbar-brand { font-size: 1.15rem; }
+.app-authenticated .brand-mark { width: 2.1rem; height: 2.1rem; }
+.app-authenticated .brand-copy small { font-size: .61rem; }
+.app-authenticated .navbar-toggler { min-height: 2.75rem; padding-inline: .75rem; }
+.app-authenticated .navbar-collapse { max-height: calc(100dvh - 9rem); overflow-y: auto; }
+.app-authenticated .nav-user, .app-authenticated .logout-button { min-height: 2.75rem; }
+.app-authenticated .page-content { padding-top: 1.25rem; padding-bottom: 2rem; min-height: 0; }
+.app-authenticated #conteudo { scroll-margin-top: .75rem; }
+.app-authenticated .site-footer { padding-block: 1.5rem; }
+.app-authenticated .site-footer .container { gap: .5rem; }
+.app-authenticated .site-footer .container > * { min-width: 0; max-width: 100%; overflow-wrap: break-word; }
+.app-authenticated :is(a, button, input, select, textarea, summary):focus { scroll-margin-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 1rem); }
+
+.mobile-app-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 1020;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    min-height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    padding: .35rem max(.5rem, env(safe-area-inset-right)) calc(.35rem + env(safe-area-inset-bottom)) max(.5rem, env(safe-area-inset-left));
+    border-top: 1px solid #d8e1ef;
+    background: rgba(255,255,255,.97);
+    box-shadow: 0 -.5rem 1.5rem rgba(32,48,80,.09);
+}
+.mobile-app-nav-link {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 3.5rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .15rem;
+    padding: .25rem .2rem;
+    border-radius: .7rem;
+    color: #48566b;
+    font-size: .72rem;
+    font-weight: 650;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+}
+.mobile-app-nav-link svg { width: 1.35rem; height: 1.35rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mobile-app-nav-link span { max-width: 100%; overflow-wrap: normal; }
+.mobile-app-nav-link.is-active { color: #24458f; background: #edf3ff; }
+.mobile-app-nav-link:hover, .mobile-app-nav-link:focus-visible { color: #24458f; background: #edf3ff; }
+.mobile-app-nav-link:focus-visible { outline: 3px solid #24458f; outline-offset: -3px; }
+
+@media (max-width: 359px) {
+    .app-authenticated { --mobile-nav-height: 6.5rem; }
+    .mobile-app-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mobile-app-nav-link { min-height: 2.75rem; }
+}
+
+@media (pointer: coarse) {
+    .app-authenticated:has(input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus, select:focus) .mobile-app-nav { display: none; }
+}
+
+.app-authenticated :is(h1, .activity-detail-header h1, .grading-detail-header h1) { font-size: clamp(1.7rem, 7vw, 2.2rem); line-height: 1.15; }
+.app-authenticated :is(.card, .submission-card) { border-radius: .9rem; box-shadow: 0 .35rem 1rem rgba(32,48,80,.06); }
+.app-authenticated .card.p-4 { padding: 1.1rem !important; }
+.app-authenticated .activity-form-actions > div:last-child { width: 100%; }
+.app-authenticated .activity-form-actions .btn { flex: 1 1 9rem; }
+.app-authenticated .question-builder-heading { flex-wrap: wrap; gap: .8rem; }
+.app-authenticated .question-builder-heading > div { min-width: 0; }
+.app-authenticated .question-builder-heading strong { overflow-wrap: break-word; }
+.app-authenticated .question-option-editor { flex-wrap: nowrap; }
+.app-authenticated .question-option-editor .input-group-text { flex: 0 0 2.75rem; justify-content: center; }
+.app-authenticated .question-option-editor .form-control { flex: 1 1 0; min-width: 0; }
+.app-authenticated .bank-question-option { min-width: 0; overflow-wrap: break-word; }
+.app-authenticated .student-question-card, .app-authenticated .context-block { overflow-wrap: break-word; }
+.app-authenticated .tour-panel { max-height: min(48dvh, 24rem); padding: 1rem; }
+.app-authenticated .tour-panel .tour-actions { gap: .4rem; }
+.app-authenticated .tour-panel .tour-actions .btn { flex: 1 1 auto; min-width: 0; }
+.app-authenticated :is(.v2-header, .activity-detail-header, .grading-detail-header) { gap: .9rem; margin-bottom: 1.2rem; }
+.app-authenticated :is(.v2-header > .btn, .activity-detail-header > .btn) { width: 100%; }
+.app-authenticated :is(.v2-metrics, .v2-activity-grid) { gap: .75rem; margin-bottom: 1.3rem; }
+.app-authenticated .v2-metrics .card { padding: 1rem; }
+.app-authenticated .v2-section { margin-block: 1.4rem; }
+.app-authenticated .v2-filters { gap: .75rem; }
+.app-authenticated .v2-filters label { flex-basis: 100%; }
+.app-authenticated .v2-filters .btn { width: 100%; min-height: 2.75rem; }
+.app-authenticated :is(.form-control, .form-select) { font-size: 1rem; min-height: 2.75rem; }
+.app-authenticated :is(.btn, summary) { min-height: 2.75rem; }
+.app-authenticated .btn-sm { min-height: 2.75rem; padding: .55rem .8rem; }
+.app-authenticated :is(.v2-empty, .empty-submissions) { padding: 1.2rem; }
+.app-authenticated :is(.submission-card-head, .ai-suggestion-head, .ai-score) { flex-wrap: wrap; }
+.app-authenticated .student-answer-box div { overflow-wrap: break-word; }
+.app-authenticated .autosave-feedback { align-items: flex-start; flex-direction: column; }
+.app-authenticated .student-submit-form .btn { width: 100%; }
+.app-authenticated .v2-batch-toolbar :is(input[type="checkbox"], button), .app-authenticated .v2-selection input { min-height: 1.5rem; }
+.app-authenticated .v2-selection { display: grid; place-items: center; min-width: 2.75rem; min-height: 2.75rem; }
+.app-authenticated .v2-batch-toolbar label { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; }
+.app-authenticated .criteria-switch { min-height: 2.75rem; }
+.app-authenticated .form-check { min-height: 2.75rem; }
+.app-authenticated .form-check-label { display: inline-block; min-height: 2.75rem; padding-block: .45rem; }
+.app-authenticated .classroom-header-actions { flex-wrap: wrap; width: 100%; }
+.app-authenticated .classroom-header-actions .btn { flex: 1 1 100%; }
+.app-authenticated .classroom-code-card { padding: 1rem; }
+.app-authenticated .classroom-code-value { overflow-wrap: anywhere; letter-spacing: .06em; }
+.app-authenticated .student-cell { min-width: 0; }
+.app-authenticated .student-cell strong { min-width: 0; overflow-wrap: break-word; }
+
+/* A second sticky control surface can cover fields and keyboard focus on a phone. */
+.app-authenticated :is(.grading-save-bar, .activity-form-actions, .question-add-toolbar, .preview-teacher-bar) { position: static; }
+.app-authenticated :is(.grading-save-bar, .activity-form-actions) { margin-top: 1.25rem; padding: 1rem; }
+.app-authenticated .question-add-toolbar { box-shadow: none; }
+.app-authenticated .preview-teacher-bar { padding-block: .65rem; }
+.app-authenticated .preview-teacher-bar .btn { min-width: 0; }
+.app-authenticated .grading-answer-head { gap: .75rem; }
+.app-authenticated .grading-answer-card { padding: 1rem !important; }
+.app-authenticated.activity-editor-page .activity-questions-section { margin-top: 2rem; }
+.app-authenticated .card.border-danger .input-group { flex-direction: column; gap: .5rem; }
+.app-authenticated .card.border-danger .input-group > :is(input, button) { width: 100%; border-radius: .6rem; }
+.app-authenticated .mobile-card-table td > form.row { margin: 0; }
+
+/* Semantic tables remain tables in the document while rows become readable cards. */
+.app-authenticated .mobile-card-table { overflow: visible; }
+.app-authenticated .mobile-card-table table, .app-authenticated .mobile-card-table tbody { display: block; width: 100%; }
+.app-authenticated .mobile-card-table thead { display: none; }
+.app-authenticated .mobile-card-table tr { display: block; margin-bottom: .8rem; padding: .65rem .8rem; border: 1px solid #d9e2ef; border-radius: .75rem; background: #fff; }
+.app-authenticated .mobile-card-table tr:last-child { margin-bottom: 0; }
+.app-authenticated .mobile-card-table td { display: block; width: 100%; padding: .45rem 0; border: 0; overflow-wrap: break-word; }
+.app-authenticated .mobile-card-table td + td { border-top: 1px solid #edf0f5; }
+.app-authenticated .mobile-card-table td > .mobile-cell-label { display: block; margin-bottom: .15rem; color: #566274; font-size: .78rem; font-weight: 700; }
+.app-authenticated .mobile-card-table td > :not(.mobile-cell-label) { min-width: 0; }
+.app-authenticated .mobile-card-table .mobile-actions { display: flex; flex-wrap: wrap; justify-content: flex-start !important; gap: .5rem; width: 100%; }
+.app-authenticated .mobile-card-table .mobile-actions :is(a, button) { min-height: 2.75rem; }
+
+.app-authenticated .table-responsive[role="region"] { scrollbar-color: #8299c7 #edf1f8; }
+.app-authenticated .table-responsive[role="region"]:focus-visible { outline: 3px solid #24458f; outline-offset: 2px; }
+
+@media (max-height: 560px) {
+    .app-authenticated .navbar-collapse { max-height: calc(100dvh - 8rem); }
+    .app-authenticated .tour-panel { max-height: min(60dvh, calc(100dvh - 5rem)); }
+}
+
+@media (max-width: 430px) {
+    .app-authenticated .navbar-brand .brand-mark,
+    .app-authenticated .brand-copy small { display: none !important; }
+    .app-authenticated .navbar-brand { margin-right: 0; }
+}

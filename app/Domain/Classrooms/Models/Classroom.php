@@ -12,8 +12,8 @@ use Illuminate\Support\Str;
 
 class Classroom extends Model
 {
-    protected $fillable = ['teacher_id', 'name', 'description', 'is_active'];
-    protected $casts = ['is_active' => 'boolean'];
+    protected $fillable = ['teacher_id', 'name', 'description', 'is_active', 'auto_approve_join'];
+    protected $casts = ['is_active' => 'boolean', 'auto_approve_join' => 'boolean'];
 
     protected static function booted(): void
     {

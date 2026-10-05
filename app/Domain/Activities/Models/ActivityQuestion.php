@@ -12,8 +12,8 @@ use Illuminate\Support\Str;
 
 class ActivityQuestion extends Model
 {
-    protected $fillable = ['activity_id', 'source_question_id', 'type', 'body', 'expected_answer', 'teacher_instruction', 'max_score', 'options_snapshot', 'rubric_snapshot', 'position'];
-    protected $casts = ['type' => QuestionType::class, 'max_score' => 'decimal:2', 'options_snapshot' => 'array', 'rubric_snapshot' => 'array'];
+    protected $fillable = ['activity_id', 'source_question_id', 'type', 'body', 'expected_answer', 'teacher_instruction', 'max_score', 'options_snapshot', 'rubric_snapshot', 'position', 'import_correction'];
+    protected $casts = ['type' => QuestionType::class, 'max_score' => 'decimal:2', 'options_snapshot' => 'array', 'rubric_snapshot' => 'array', 'import_correction' => 'boolean'];
 
     protected static function booted(): void
     {

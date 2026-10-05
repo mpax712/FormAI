@@ -15,6 +15,13 @@ final readonly class GradingRequest
         public string $locale,
         public string $idempotencyKey,
         public string $safetyIdentifier,
+        public string $feedbackDetail = 'medium',
+        public string $intelligenceProfile = 'balanced',
+        public string $gradingStrictness = 'balanced',
+        public ?string $systemInstruction = null,
+        public array $destination = [],
+        public ?string $composedInput = null,
+        public ?array $responseSchema = null,
     ) {}
 
     public function effectiveRubric(): array
@@ -26,7 +33,7 @@ final readonly class GradingRequest
         return [[
             'label' => 'Qualidade geral da resposta',
             'description' => 'Avalie a correção, a relevância, a clareza e a completude da resposta em relação à pergunta.',
-            'weight' => 1.0,
+            'weight' => $this->maximumScore,
         ]];
     }
 }

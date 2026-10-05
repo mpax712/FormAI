@@ -12,14 +12,14 @@ class CancelExpiredAiGradingRunsAction
 {
     public function execute(Submission $submission): int
     {
-        $timeout = (int) config('formai.grading_timeout_seconds', 180);
+        $timeout = (int) config('ai_grading.queue_timeout_seconds', 86400);
         $activeStatuses = [GradingRunStatus::Pending, GradingRunStatus::Processing, GradingRunStatus::RetryableFailed];
 
         return DB::transaction(function () use ($submission, $timeout, $activeStatuses): int {
             $expiredRuns = GradingRun::query()
                 ->whereHas('answer', fn ($query) => $query->where('submission_id', $submission->id))
                 ->whereIn('status', $activeStatuses)
-                ->where('created_at', '<=', now()->subSeconds($timeout))
+                ->where(fn ($q) => $q->where('expires_at', '<=', now())->orWhere(fn ($legacy) => $legacy->whereNull('expires_at')->where('created_at', '<=', now()->subSeconds($timeout))))
                 ->lockForUpdate()
                 ->get();
 
@@ -27,8 +27,8 @@ class CancelExpiredAiGradingRunsAction
                 $run->update([
                     'status' => GradingRunStatus::PermanentlyFailed,
                     'finished_at' => now(),
-                    'error_code' => 'AiGradingTimeout',
-                    'error_message' => "Correção cancelada porque ultrapassou o limite de {$timeout} segundos.",
+                    'error_code' => $run->error_code ?: 'AiGradingTimeout',
+                    'error_message' => $run->error_message ?: "Correção cancelada porque ultrapassou o limite de {$timeout} segundos.",
                 ]);
             }
 

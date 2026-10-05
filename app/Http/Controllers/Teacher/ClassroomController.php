@@ -43,4 +43,16 @@ class ClassroomController extends Controller
         $classroom->update($request->validate(['name' => ['required', 'string', 'max:150'], 'description' => ['nullable', 'string', 'max:3000'], 'is_active' => ['sometimes', 'boolean']]));
         return redirect()->route('teacher.classrooms.show', $classroom)->with('status', 'Turma atualizada.');
     }
+
+    public function updateAutoApproveJoin(Request $request, Classroom $classroom): RedirectResponse
+    {
+        $this->authorize('update', $classroom);
+        $data = $request->validate(['auto_approve_join' => ['required', 'boolean']]);
+        $classroom->update(['auto_approve_join' => $data['auto_approve_join']]);
+
+        return redirect()->route('teacher.classrooms.show', $classroom)
+            ->with('status', $classroom->auto_approve_join
+                ? 'Novos alunos que usarem o código entrarão automaticamente na turma.'
+                : 'Novos alunos que usarem o código precisarão da sua aprovação.');
+    }
 }

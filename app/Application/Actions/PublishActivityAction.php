@@ -25,8 +25,8 @@ class PublishActivityAction
                 throw new DomainException('Defina um prazo futuro antes de publicar esta atividade.');
             }
             $questions = $locked->questions()->get();
-            if ($questions->isEmpty()) {
-                throw new DomainException('Adicione ao menos uma pergunta antes de publicar.');
+            if ($questions->every(fn ($question) => $question->type === \App\Domain\QuestionBank\Enums\QuestionType::Context)) {
+                throw new DomainException('Adicione ao menos uma questão com pontuação antes de publicar.');
             }
 
             $sourceIds = $questions->pluck('source_question_id')->filter()->unique()->values();
@@ -46,11 +46,11 @@ class PublishActivityAction
                 $snapshot->update([
                     'type' => $source->type,
                     'body' => $source->body,
-                    'expected_answer' => $source->expected_answer,
-                    'teacher_instruction' => null,
+                    'expected_answer' => $snapshot->import_correction ? $source->expected_answer : null,
+                    'teacher_instruction' => $snapshot->import_correction ? $source->teacher_instruction : null,
                     'max_score' => $source->max_score,
                     'options_snapshot' => $source->options->map(fn ($option) => ['key' => $option->option_key, 'text' => $option->text, 'is_correct' => $option->is_correct])->values()->all(),
-                    'rubric_snapshot' => $source->rubricCriteria->map(fn ($criterion) => ['label' => $criterion->label, 'description' => $criterion->description, 'weight' => (float) $criterion->weight])->values()->all(),
+                    'rubric_snapshot' => $snapshot->import_correction ? $source->rubricCriteria->map(fn ($criterion) => ['label' => $criterion->label, 'description' => $criterion->description, 'weight' => (float) $criterion->weight])->values()->all() : [],
                 ]);
             }
             $questions = $locked->questions()->get();

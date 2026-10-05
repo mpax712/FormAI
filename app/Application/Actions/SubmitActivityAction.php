@@ -26,6 +26,7 @@ class SubmitActivityAction
 
             $answers = $locked->answers->keyBy('activity_question_id');
             foreach ($locked->activity->questions as $question) {
+                if ($question->type === QuestionType::Context) continue;
                 $answer = $answers->get($question->id);
                 $filled = $question->type === QuestionType::Essay ? filled($answer?->response_text) : filled($answer?->selected_option_key);
                 if (! $filled) {
@@ -34,11 +35,12 @@ class SubmitActivityAction
             }
 
             $objectiveScore = $locked->activity->questions
-                ->where('type', QuestionType::SingleChoice)
+                ->filter(fn ($question) => in_array($question->type, [QuestionType::SingleChoice, QuestionType::MultipleChoice], true))
                 ->sum(function ($question) use ($answers) {
-                    $correct = collect($question->options_snapshot)->firstWhere('is_correct', true);
-
-                    return ($answers->get($question->id)?->selected_option_key === ($correct['key'] ?? null)) ? (float) $question->max_score : 0;
+                    $correct = collect($question->options_snapshot)->filter(fn ($option) => (bool) ($option['is_correct'] ?? false))->pluck('key')->sort()->values()->all();
+                    $selected = explode(',', (string) $answers->get($question->id)?->selected_option_key);
+                    sort($selected);
+                    return $selected === $correct ? (float) $question->max_score : 0;
                 });
 
             $locked->update([

@@ -29,6 +29,13 @@
     </div>
 
     <div class="col-lg-8">
+        @if($user->isTeacher() || $user->isStudent())
+            <div class="card p-4 mb-4">
+                <h2 class="h4">Tutorial do FormAI</h2>
+                <p class="text-secondary">Reveja as principais áreas do sistema quando quiser. O tutorial começa novamente pela apresentação.</p>
+                <a class="btn btn-outline-primary align-self-start" href="{{ route('dashboard', ['tour' => 'restart']) }}" data-tour-restart>Refazer tutorial</a>
+            </div>
+        @endif
         <div class="card p-4 mb-4">
             <h2 class="h4">Dados pessoais</h2>
             <form method="post" action="{{ route('profile.update') }}">@csrf @method('PATCH')

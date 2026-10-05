@@ -19,9 +19,18 @@ class SaveActivityDraftAction
         return DB::transaction(function () use ($activity, $teacher, $data): Activity {
             if ($activity) {
                 $activity = Activity::query()->lockForUpdate()->findOrFail($activity->id);
-                $activity->ensureDraft();
                 if ($activity->teacher_id !== $teacher->id) {
                     throw new DomainException('A atividade não pertence a este professor.');
+                }
+
+                if ($activity->submissions()->exists()) {
+                    $activity->update(Arr::only($data, ['title', 'description', 'grading_instructions', 'feedback_detail', 'intelligence_profile', 'grading_strictness', 'deadline_at']));
+
+                    if ($activity->status === ActivityStatus::Closed && (! $activity->deadline_at || $activity->deadline_at->isFuture())) {
+                        $activity->update(['status' => ActivityStatus::Published]);
+                    }
+
+                    return $activity->fresh(['classroom', 'questions']);
                 }
             }
 
@@ -41,9 +50,13 @@ class SaveActivityDraftAction
             }
 
             if ($activity) {
-                $activity->update(Arr::only($data, ['classroom_id', 'title', 'description', 'deadline_at']));
+                $activity->update(Arr::only($data, ['classroom_id', 'title', 'description', 'grading_instructions', 'feedback_detail', 'intelligence_profile', 'grading_strictness', 'deadline_at']));
+
+                if ($activity->status === ActivityStatus::Closed && (! $activity->deadline_at || $activity->deadline_at->isFuture())) {
+                    $activity->update(['status' => ActivityStatus::Published]);
+                }
             } else {
-                $activity = $classroom->activities()->create(Arr::only($data, ['title', 'description', 'deadline_at']) + [
+                $activity = $classroom->activities()->create(Arr::only($data, ['title', 'description', 'grading_instructions', 'feedback_detail', 'intelligence_profile', 'grading_strictness', 'deadline_at']) + [
                     'teacher_id' => $teacher->id,
                     'status' => ActivityStatus::Draft,
                 ]);
@@ -70,22 +83,24 @@ class SaveActivityDraftAction
 
             foreach ($bankIds as $bankId) {
                 $question = $bankQuestions->get($bankId);
+                $includeCorrection = filter_var($data['bank_correction'][$bankId] ?? true, FILTER_VALIDATE_BOOL);
                 $activity->questions()->create([
                     'source_question_id' => $question->id,
+                    'import_correction' => $includeCorrection,
                     'type' => $question->type,
                     'body' => $question->body,
-                    'expected_answer' => $question->expected_answer,
-                    'teacher_instruction' => null,
+                    'expected_answer' => $includeCorrection ? $question->expected_answer : null,
+                    'teacher_instruction' => $includeCorrection ? $question->teacher_instruction : null,
                     'max_score' => $question->max_score,
                     'options_snapshot' => $question->options->map(fn ($option) => ['key' => $option->option_key, 'text' => $option->text, 'is_correct' => $option->is_correct])->values()->all(),
-                    'rubric_snapshot' => $question->rubricCriteria->map(fn ($criterion) => ['label' => $criterion->label, 'description' => $criterion->description, 'weight' => (float) $criterion->weight])->values()->all(),
+                    'rubric_snapshot' => $includeCorrection ? $question->rubricCriteria->map(fn ($criterion) => ['label' => $criterion->label, 'description' => $criterion->description, 'weight' => (float) $criterion->weight])->values()->all() : [],
                     'position' => $position++,
                 ]);
             }
 
             foreach ($data['questions'] ?? [] as $payload) {
                 $type = QuestionType::from($payload['type']);
-                $options = $type === QuestionType::SingleChoice
+                $options = in_array($type, [QuestionType::SingleChoice, QuestionType::MultipleChoice], true)
                     ? collect($payload['options'] ?? [])->filter(fn ($option) => filled($option['text'] ?? null))->values()->map(fn ($option, $index) => [
                         'key' => chr(65 + $index),
                         'text' => trim($option['text']),

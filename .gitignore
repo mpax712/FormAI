@@ -1,27 +1,57 @@
-*.log
-.DS_Store
+# Environment files (commit only sanitized examples)
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/fonts-manifest.dev.json
+.env.*
+!.env.example
+!.env.*.example
+# This local demo file contains configured credentials.
+.env.mysql-demo.example
+
+# Dependencies and local tools
+/vendor/
+/node_modules/
+/.tools/
+
+# Laravel / Vite generated files
+/public/build/
 /public/hot
 /public/storage
+/public/uploads/
 /storage/*.key
-/storage/pail
-/vendor
+/storage/pail/
+
+# Local databases and database dumps
+/database/*.sqlite
+/database/*.sqlite-*
+/database/*.sql
+
+# Tests and coverage reports
+/.phpunit.cache/
+/.phpunit.result.cache
+/coverage/
+/playwright-report/
+/test-results/
+
+# IDEs and editors
+/.codex/
+/.cursor/
+/.idea/
+/.nova/
+/.vscode/
+/.zed/
+.phpactor.json
+
+# Local authentication and helper files
+/auth.json
 _ide_helper.php
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Homestead
 Homestead.json
 Homestead.yaml
-Thumbs.db
+
+# Logs and development manifests
+*.log
+/public/fonts-manifest.dev.json

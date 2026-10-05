@@ -6,6 +6,14 @@
 @php
     $isEditing = isset($question);
     $isEssay = old('type', $isEditing ? $question->type->value : 'essay') === 'essay';
+    $oldOptions = old('options');
+    $options = is_array($oldOptions)
+        ? $oldOptions
+        : ($isEditing ? $question->options->all() : []);
+    $oldRubric = old('rubric');
+    $rubric = is_array($oldRubric)
+        ? $oldRubric
+        : ($isEditing ? $question->rubricCriteria->all() : []);
 @endphp
 
 <div class="card p-4 p-lg-5">
@@ -15,25 +23,28 @@
         <p class="text-secondary mb-0">Defina o enunciado, a pontuação e os critérios usados na correção.</p>
     </div>
 
-    <form method="post" action="{{ $isEditing ? route('teacher.questions.update', $question) : route('teacher.questions.store') }}">
+    <form method="post" data-bank-editor action="{{ $isEditing ? route('teacher.questions.update', $question) : route('teacher.questions.store') }}">
         @csrf
         @if($isEditing)
             @method('PUT')
         @endif
 
+        <div class="question-type-step mb-4">
+            <label class="form-label" for="type">1. Escolha o tipo de questão</label>
+            <select class="form-select" id="type" name="type" required>
+                <option value="" @selected(! $isEditing && ! old('type'))>Selecione para começar</option>
+                <option value="essay" @selected(($isEditing || old('type')) && $isEssay)>Dissertativa — correção com IA e revisão</option>
+                <option value="single_choice" @selected(($isEditing || old('type')) && ! $isEssay)>Escolha única — correção pelo gabarito</option>
+            </select>
+        </div>
+        <fieldset data-bank-content @if(! $isEditing && ! old('type')) hidden disabled @endif>
+        <h2 class="h5">2. Conteúdo e pontuação</h2>
         <div class="row g-3">
             <div class="col-md-8">
                 <label class="form-label" for="body">Enunciado</label>
                 <textarea class="form-control" id="body" name="body" rows="5" maxlength="10000" required>{{ old('body', $question->body ?? '') }}</textarea>
             </div>
             <div class="col-md-4">
-                <div class="mb-3">
-                    <label class="form-label" for="type">Tipo</label>
-                    <select class="form-select" id="type" name="type" required>
-                        <option value="essay" @selected($isEssay)>Dissertativa</option>
-                        <option value="single_choice" @selected(! $isEssay)>Escolha única</option>
-                    </select>
-                </div>
                 <div>
                     <label class="form-label" for="max_score">Pontuação</label>
                     <input class="form-control" id="max_score" name="max_score" type="number" step="0.01" min="0.01" value="{{ old('max_score', $question->max_score ?? 1) }}" required>
@@ -41,15 +52,17 @@
             </div>
         </div>
 
-        <div class="mt-3">
+        <fieldset class="mt-3" data-bank-kind="essay">
             <label class="form-label" for="expected_answer">Resposta esperada</label>
             <textarea class="form-control" id="expected_answer" name="expected_answer" rows="3">{{ old('expected_answer', $question->expected_answer ?? '') }}</textarea>
             <div class="form-text">Obrigatória para questões dissertativas.</div>
-        </div>
+            <label class="form-label mt-3" for="teacher_instruction">Como a IA deve corrigir</label>
+            <textarea class="form-control" id="teacher_instruction" name="teacher_instruction" rows="3" maxlength="2000" placeholder="Ex.: aceite termos equivalentes e explique os pontos a melhorar.">{{ old('teacher_instruction', $question->teacher_instruction ?? '') }}</textarea>
+        </fieldset>
 
-        <section class="mb-4" aria-labelledby="options-title">
+        <fieldset class="my-4" data-bank-kind="single_choice" aria-labelledby="options-title">
             <h2 id="options-title" class="h5">Alternativas <small class="text-secondary">— para escolha única</small></h2>
-            @foreach(range(0, 3) as $index)
+            @foreach(range(0, max(3, count($options) - 1)) as $index)
                 <div class="input-group mb-2">
                     <div class="input-group-text">
                         <input
@@ -70,11 +83,11 @@
                 </div>
             @endforeach
             <div class="form-text">Preencha ao menos duas opções e marque exatamente uma como correta.</div>
-        </section>
+        </fieldset>
 
-        <section class="mb-4" aria-labelledby="rubric-title">
+        <fieldset class="my-4" data-bank-kind="essay" aria-labelledby="rubric-title">
             <h2 id="rubric-title" class="h5">Rubrica <small class="text-secondary">— para questão dissertativa</small></h2>
-            @foreach(range(0, 2) as $index)
+            @foreach(range(0, max(2, count($rubric) - 1)) as $index)
                 <div class="row g-2 mb-2">
                     <div class="col-md-3">
                         <input
@@ -102,17 +115,18 @@
                             type="number"
                             step="0.01"
                             min="0"
-                            max="1"
-                            placeholder="Peso"
-                            value="{{ old("rubric.$index.weight", $isEditing ? optional($question->rubricCriteria->get($index))->weight : ($index === 0 ? 1 : '')) }}"
+                            max="1000"
+                            placeholder="Pontos"
+                            value="{{ old("rubric.$index.weight", $isEditing ? optional($question->rubricCriteria->get($index))->weight : '') }}"
                         >
                     </div>
                 </div>
             @endforeach
-            <div class="form-text">Os pesos dos critérios preenchidos devem somar 1,00.</div>
-        </section>
+            <div class="form-text">Os pontos dos critérios devem somar exatamente a pontuação da questão.</div>
+        </fieldset>
 
         <button class="btn btn-primary" type="submit">Salvar questão</button>
+        </fieldset>
     </form>
 </div>
 @endsection

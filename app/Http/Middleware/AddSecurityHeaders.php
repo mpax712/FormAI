@@ -14,6 +14,9 @@ class AddSecurityHeaders
             return redirect()->secure($request->getRequestUri(), 301);
         }
         $response = $next($request);
+        if ($request->user()) {
+            $response->headers->set('Cache-Control', 'private, no-store');
+        }
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

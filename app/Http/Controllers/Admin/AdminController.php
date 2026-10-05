@@ -19,9 +19,16 @@ class AdminController extends Controller
     public function dashboard(): View
     {
         return view('admin.dashboard', ['metrics' => [
+            'Professores ativos' => User::where('role', 'teacher')->where('is_active', true)->count(),
+            'Alunos ativos' => User::where('role', 'student')->where('is_active', true)->count(),
+            'Administradores ativos' => User::where('role', 'admin')->where('is_active', true)->count(),
             'users' => User::query()->count(), 'classrooms' => Classroom::query()->count(), 'activities' => Activity::query()->count(),
             'failed_ai' => GradingRun::query()->whereIn('status', ['retryable_failed', 'permanently_failed'])->count(),
             'queued' => DB::table('jobs')->count(), 'failed_jobs' => DB::table('failed_jobs')->count(),
+        ], 'operations' => [
+            'waiting' => GradingRun::whereIn('status', ['pending', 'retryable_failed'])->count(),
+            'failed' => GradingRun::where('status', 'permanently_failed')->count(),
+            'scheduler' => \App\Infrastructure\Observability\Models\SystemHeartbeat::where('name', 'scheduler')->value('last_seen_at'),
         ], 'audits' => AuditLog::query()->with('actor:id,name')->latest()->limit(20)->get()]);
     }
     public function users(Request $request): View

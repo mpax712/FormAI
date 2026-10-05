@@ -45,7 +45,7 @@ class ActivityController extends Controller
     public function save(Request $request, Submission $submission, ActivityQuestion $question, SaveAnswerAction $action): JsonResponse
     {
         $this->authorize('update', $submission);
-        $data = $request->validate(['response_text' => ['nullable', 'string', 'max:30000'], 'selected_option_key' => ['nullable', 'string', 'max:20'], 'version' => ['required', 'integer', 'min:0']]);
+        $data = $request->validate(['response_text' => ['nullable', 'string', 'max:30000'], 'selected_option_key' => ['nullable', 'string', 'max:20'], 'selected_option_keys' => ['nullable', 'array', 'max:10'], 'selected_option_keys.*' => ['string', 'max:20'], 'version' => ['required', 'integer', 'min:0']]);
         try {
             $answer = $action->execute($submission, $question, $data);
         } catch (DomainException $e) {

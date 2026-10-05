@@ -4,6 +4,7 @@ namespace Tests\AI;
 
 use App\Application\DTOs\GradingRequest;
 use App\Domain\Grading\Contracts\AiGradingProvider;
+use App\Infrastructure\AI\Exceptions\RetryableAiException;
 use App\Infrastructure\AI\GeminiGradingProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -14,7 +15,7 @@ class GeminiGradingProviderTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_uses_gemini_interactions_with_structured_output(): void
+    public function test_it_uses_gemini_generate_content_with_structured_output(): void
     {
         config([
             'formai.ai_provider' => 'gemini',
@@ -23,16 +24,23 @@ class GeminiGradingProviderTest extends TestCase
             'services.gemini.model' => 'gemini-test-model',
         ]);
         Http::fake(['gemini.test/*' => Http::response([
-            'status' => 'completed',
-            'steps' => [['type' => 'model_output', 'content' => [['type' => 'text', 'text' => json_encode([
-                'score' => 8.5,
-                'criterion_scores' => [['criterion' => 'Clareza', 'score' => 8.5, 'justification' => 'Resposta clara.']],
-                'evidence' => ['Trecho relevante'],
-                'feedback' => 'Boa resposta.',
-                'confidence' => .9,
-                'warnings' => [],
-            ])]]]],
-            'usage' => ['total_input_tokens' => 110, 'total_output_tokens' => 45],
+            'candidates' => [
+                [
+                    'content' => [
+                        'parts' => [
+                            ['text' => json_encode([
+                                'score' => 8.5,
+                                'criterion_scores' => [['criterion' => 'Clareza', 'score' => 8.5, 'justification' => 'Resposta clara.']],
+                                'evidence' => ['Trecho relevante'],
+                                'feedback' => 'Boa resposta.',
+                                'confidence' => .9,
+                                'warnings' => [],
+                            ])],
+                        ],
+                    ],
+                ],
+            ],
+            'usageMetadata' => ['promptTokenCount' => 110, 'candidatesTokenCount' => 45],
         ], 200)]);
 
         $provider = app(AiGradingProvider::class);
@@ -45,13 +53,27 @@ class GeminiGradingProviderTest extends TestCase
         Http::assertSent(function (Request $request) {
             $data = $request->data();
 
-            return $request->url() === 'https://gemini.test/v1beta/interactions'
+            return $request->url() === 'https://gemini.test/v1beta/models/gemini-test-model:generateContent'
                 && $request->hasHeader('x-goog-api-key', 'gemini-test-key')
-                && $data['model'] === 'gemini-test-model'
-                && $data['response_format']['mime_type'] === 'application/json'
-                && $data['response_format']['schema']['type'] === 'object'
-                && ! str_contains($data['input'], '@');
+                && $data['generationConfig']['responseMimeType'] === 'application/json'
+                && $data['generationConfig']['responseJsonSchema']['type'] === 'object'
+                && ! str_contains($data['contents'][0]['parts'][0]['text'], '@');
         });
+    }
+
+    public function test_server_errors_are_retryable(): void
+    {
+        config([
+            'services.gemini.key' => 'gemini-test-key',
+            'services.gemini.base_url' => 'https://gemini.test/v1beta',
+            'services.gemini.model' => 'gemini-test-model',
+        ]);
+        Http::fake(['gemini.test/*' => Http::response([], 500)]);
+
+        $this->expectException(RetryableAiException::class);
+        $this->expectExceptionMessage('HTTP 500');
+
+        (new GeminiGradingProvider)->grade($this->request());
     }
 
     private function request(): GradingRequest
@@ -59,7 +81,7 @@ class GeminiGradingProviderTest extends TestCase
         return new GradingRequest(
             'Pergunta',
             'Resposta esperada',
-            [['label' => 'Clareza', 'weight' => 1]],
+            [['label' => 'Clareza', 'weight' => 10]],
             'Resposta sem identificação',
             'Seja objetivo',
             10,

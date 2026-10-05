@@ -40,6 +40,21 @@ class SubmissionFlowTest extends TestCase
         app(SaveAnswerAction::class)->execute($submission->fresh(), $question, ['selected_option_key' => 'B', 'version' => 0]);
     }
 
+    public function test_retry_after_lost_save_response_reuses_the_saved_answer(): void
+    {
+        [$submission, $question] = $this->essayScenario();
+        $action = app(SaveAnswerAction::class);
+        $saved = $action->execute($submission, $question, ['response_text' => 'Resposta do aluno.', 'version' => 0]);
+        $submissionVersion = $submission->fresh()->version;
+
+        $retried = $action->execute($submission->fresh(), $question, ['response_text' => 'Resposta do aluno.', 'version' => 0]);
+
+        $this->assertSame($saved->id, $retried->id);
+        $this->assertSame($saved->version, $retried->version);
+        $this->assertSame($submissionVersion, $submission->fresh()->version);
+        $this->assertDatabaseCount('answers', 1);
+    }
+
     public function test_essay_submission_does_not_dispatch_ai_grading_automatically(): void
     {
         Queue::fake();

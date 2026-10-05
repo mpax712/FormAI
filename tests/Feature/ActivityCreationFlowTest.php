@@ -30,6 +30,8 @@ class ActivityCreationFlowTest extends TestCase
             ->assertSee('Visualizar')
             ->assertSee('questions[__INDEX__][expected_answer]', false)
             ->assertSee('questions[__INDEX__][rubric][0][label]', false)
+            ->assertSee('name="grading_instructions"', false)
+            ->assertSee('Como corrigir com IA')
             ->assertSee('Critérios de correção')
             ->assertDontSee('questions[__INDEX__][teacher_instruction]', false)
             ->assertSee('Usar banco de questões')
@@ -41,6 +43,8 @@ class ActivityCreationFlowTest extends TestCase
         [$teacher, $classroom] = $this->teacherAndClassroom();
         $payload = $this->activityPayload($classroom->id);
         $payload['intent'] = 'publish';
+        $payload['feedback_detail'] = 'detailed';
+        $payload['intelligence_profile'] = 'advanced';
         unset($payload['questions'][0]['expected_answer'], $payload['questions'][0]['rubric']);
 
         $response = $this->actingAs($teacher)->post(route('teacher.activities.store'), $payload);
@@ -48,6 +52,8 @@ class ActivityCreationFlowTest extends TestCase
         $activity = Activity::query()->firstOrFail();
         $response->assertRedirect(route('teacher.activities.show', $activity));
         $this->assertSame(ActivityStatus::Published, $activity->status);
+        $this->assertSame('detailed', $activity->feedback_detail);
+        $this->assertSame('advanced', $activity->intelligence_profile);
         $this->assertNull($activity->questions->first()->expected_answer);
         $this->assertSame([], $activity->questions->first()->rubric_snapshot);
     }
@@ -101,7 +107,7 @@ class ActivityCreationFlowTest extends TestCase
                 'body' => 'Explique o ciclo da água.',
                 'expected_answer' => 'Evaporação, condensação e precipitação.',
                 'max_score' => 10,
-                'rubric' => [['label' => 'Conceito', 'description' => 'Explica as etapas', 'weight' => 1]],
+                'rubric' => [['label' => 'Conceito', 'description' => 'Explica as etapas', 'weight' => 10]],
             ]],
         ]);
 
@@ -116,24 +122,27 @@ class ActivityCreationFlowTest extends TestCase
     {
         [$teacher, $classroom] = $this->teacherAndClassroom();
         $payload = $this->activityPayload($classroom->id);
+        $payload['questions'][0]['max_score'] = 10;
+        $payload['grading_instructions'] = 'Considere respostas equivalentes e valorize a fundamentação.';
         $payload['questions'][0]['expected_answer'] = 'Uma resposta de referência completa.';
         $payload['questions'][0]['rubric'] = [
-            ['label' => 'Conteúdo', 'description' => 'Domínio dos conceitos.', 'weight' => 0.6],
-            ['label' => 'Clareza', 'description' => 'Organização e objetividade.', 'weight' => 0.4],
+            ['label' => 'Conteúdo', 'description' => 'Domínio dos conceitos.', 'weight' => 6],
+            ['label' => 'Clareza', 'description' => 'Organização e objetividade.', 'weight' => 4],
         ];
 
         $this->actingAs($teacher)->post(route('teacher.activities.store'), $payload)
             ->assertSessionHasNoErrors();
 
         $question = ActivityQuestion::query()->firstOrFail();
+        $this->assertSame('Considere respostas equivalentes e valorize a fundamentação.', $question->activity->grading_instructions);
         $this->assertSame('Uma resposta de referência completa.', $question->expected_answer);
         $this->assertSame('Conteúdo', $question->rubric_snapshot[0]['label']);
-        $this->assertEqualsWithDelta(0.6, $question->rubric_snapshot[0]['weight'], 0.001);
+        $this->assertEqualsWithDelta(6, $question->rubric_snapshot[0]['weight'], 0.001);
         $this->assertSame('Clareza', $question->rubric_snapshot[1]['label']);
-        $this->assertEqualsWithDelta(0.4, $question->rubric_snapshot[1]['weight'], 0.001);
+        $this->assertEqualsWithDelta(4, $question->rubric_snapshot[1]['weight'], 0.001);
     }
 
-    public function test_grading_criteria_weights_must_total_one(): void
+    public function test_grading_criteria_points_must_total_question_score(): void
     {
         [$teacher, $classroom] = $this->teacherAndClassroom();
         $payload = $this->activityPayload($classroom->id);
@@ -142,6 +151,15 @@ class ActivityCreationFlowTest extends TestCase
             ['label' => 'Clareza', 'description' => '', 'weight' => 0.2],
         ];
 
+        $this->actingAs($teacher)->post(route('teacher.activities.store'), $payload)
+            ->assertSessionHasErrors('questions.0.rubric');
+
+        $this->assertDatabaseCount('activities', 0);
+
+        $payload['questions'][0]['rubric'] = [
+            ['label' => 'Conteúdo', 'description' => '', 'weight' => 0.8],
+            ['label' => 'Clareza', 'description' => '', 'weight' => 0.4],
+        ];
         $this->actingAs($teacher)->post(route('teacher.activities.store'), $payload)
             ->assertSessionHasErrors('questions.0.rubric');
 
@@ -395,15 +413,15 @@ class ActivityCreationFlowTest extends TestCase
         $this->assertSame(ActivityStatus::Draft, $activity->fresh()->status);
     }
 
-    public function test_published_activity_cannot_be_edited_or_updated_without_server_error(): void
+    public function test_published_activity_without_submissions_can_be_edited(): void
     {
         [$teacher, $classroom] = $this->teacherAndClassroom();
         $activity = Activity::query()->create(['teacher_id' => $teacher->id, 'classroom_id' => $classroom->id, 'title' => 'Publicada', 'status' => ActivityStatus::Published, 'deadline_at' => now()->addDay(), 'published_at' => now()]);
         ActivityQuestion::query()->create(['activity_id' => $activity->id, 'type' => QuestionType::Essay, 'body' => 'Pergunta', 'expected_answer' => 'Resposta', 'max_score' => 1, 'rubric_snapshot' => [['label' => 'Critério', 'description' => 'Descrição', 'weight' => 1]], 'position' => 1]);
 
-        $this->actingAs($teacher)->get(route('teacher.activities.edit', $activity))->assertStatus(409);
+        $this->actingAs($teacher)->get(route('teacher.activities.edit', $activity))->assertOk();
         $this->actingAs($teacher)->put(route('teacher.activities.update', $activity), $this->activityPayload($classroom->id))
-            ->assertSessionHasErrors('questions');
+            ->assertSessionHasNoErrors();
     }
 
     public function test_question_bank_is_paginated_and_keeps_selected_items_visible(): void

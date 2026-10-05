@@ -1,6 +1,16 @@
 @extends('layouts.app')
 @section('title', 'Resultado · '.$submission->activity->title)
 @section('content')
-<div class="card p-4 mb-4"><span class="text-secondary">Resultado publicado</span><h1>{{ $submission->activity->title }}</h1><div class="metric">{{ number_format((float)$submission->final_score,2,',','.') }} / {{ number_format((float)$submission->activity->total_score,2,',','.') }}</div></div>
-@foreach($submission->answers as $answer)<article class="card p-4 mb-3"><h2 class="h5">{{ $answer->activityQuestion->body }}</h2><p><strong>Sua resposta:</strong> {{ $answer->response_text ?: $answer->selected_option_key }}</p>@if($answer->gradingDecision)<p><strong>Nota:</strong> {{ $answer->gradingDecision->score }} / {{ $answer->activityQuestion->max_score }}</p><p><strong>Feedback:</strong> {{ $answer->gradingDecision->feedback ?: 'Sem comentario adicional.' }}</p>@else<p class="text-secondary">Questao objetiva corrigida automaticamente.</p>@endif</article>@endforeach
+@php($activity = $submission->activity)
+@php($answers = $submission->answers->keyBy('activity_question_id'))
+<div class="student-activity-hero student-result-hero mb-4">
+    <a class="student-back-link" href="{{ route('student.activities.index') }}">← Minhas atividades</a>
+    <span class="question-type-label">Resultado publicado</span>
+    <h1>{{ $activity->title }}</h1>
+    @if($activity->description)<div class="question-rich-text activity-description">{{ $activity->description }}</div>@endif
+    <p class="student-final-score mb-0">Sua nota: <strong>{{ number_format((float) $submission->final_score, 2, ',', '.') }} / {{ number_format((float) $activity->total_score, 2, ',', '.') }}</strong></p>
+</div>
+@foreach($activity->questions as $question)
+    @include('student.activities._question', ['isResult' => true])
+@endforeach
 @endsection

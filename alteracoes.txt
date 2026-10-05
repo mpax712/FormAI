@@ -1,0 +1,35 @@
+Mudanças/modificações a fazer
+
+*CACHE*
+- você devera aprimorar o sistema de cache e implementar ele no sistema e retirar do banco de dados para poder estar diminuindo a quantidade de acessos no banco
+- me diga se o sistema esta utilizando uma api para consultar os dados necessarios no banco, caso não peço que implemente de maneira eficiente
+- no cache, coloque um sistema que faça com que ele puxe todas as informações que mais são acessadas onde devera separar oq é mais sensivel e oq pode ser visto sem tanta complicancia para que não haja vasamento de dados
+
+*Banco de questões*
+- Em relação ao banco de questões devera realizar uma restilização e correção do css para melhor visualização.
+- Na tela de criação de uma questão nova, você devera estilizar e melhorar tanto visualmente quanto funcionalmente para que o usuario primeiro escolha o tipo de questão que quer registrar e depois ele crie o tipo de questão e o como ele quer que a IA corrija futuramente
+- Quando ele "puxar" uma pergunta do banco de questão para a sua avaliação ele devera ter a escolha de puxar em junção as especificações de correção da IA.
+
+*Criação da atividade*
+- Na parte em que contem a "inserção" dos criterios de avaliação da questão, vc devera fazer com que ela não apareça na tela e que para colocar ela na tela para aquela questão em especifico devera clicar em um botão animado tipo "on/off" para poder estar liberando os criterios
+> isso vai servir para que a tela não fique muito poluida normalmente
+
+*Dashboard*
+- Quero que você crie umas tabelas de estatisticas para os professores para saberem em relação as atividades em quantas foram entregues, quantas estão pendentes ou em relação tambem as correções da IA em, pendentes e estatisticas
+
+*Correção de IA*
+- Você devera inserir um botão de 'corrigir todos' para que a IA corrija todas as atividades em massa e devolva da maneira correta as atividades
+> As atividades deverão serem corrigidas ou todas de uma vez ou uma por uma, seria legal você verificar qual modo ultiliza menos token para economizar eles
+
+
+V2 UI 
+> Todas esses pedidos estarão relacionados a Mudanças a UI que deverão que ser feitas
+ 
+**Tela de atividades**
+- Na seção de entregas de atividades realizadas(onde tem a opção de corrigir com IA) você devera Atualizar o css pois esta tendo colisões de textos ou iten do tipo quando selecionamos individualmente
+
+**Dashboard**
+- Você devera retirar a tabela relacionada as solicitações de IA e colocar itens mais necessarios para o professor, como exemplo um gráfico para cada atividade indicando quantos entregaram e etc 
+> Não sei bem oq colocar no dashboard por isso queria sua opnião do que poder adicionar, Assim me faça perguntas do que da para melhorar e adicionar
+
+>Peço que me faça perguntas para poder ajudar a melhorar a UI geral do site

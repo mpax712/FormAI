@@ -15,6 +15,7 @@ final readonly class GradingResult
         public array $warnings,
         public ?int $inputTokens = null,
         public ?int $outputTokens = null,
+        public ?string $teacherFeedback = null,
     ) {
         if ($confidence < 0 || $confidence > 1) {
             throw new InvalidArgumentException('Confianca fora do intervalo permitido.');

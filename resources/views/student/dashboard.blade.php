@@ -1,0 +1,14 @@
+@extends('layouts.app')
+@section('title', 'Meu painel · FormAI')
+@section('content')
+<header class="v2-header"><div><span class="grading-eyebrow">Meu aprendizado</span><h1>Olá, {{ auth()->user()->name }}</h1><p>Organize suas entregas e acompanhe seus resultados.</p></div><a class="btn btn-primary" href="{{ route('student.activities.index') }}">Todas as atividades</a></header>
+@if(auth()->user()->pendingClassrooms()->exists())<div class="alert alert-warning">Entrada aguardando aprovação. As atividades aparecerão após a aprovação do professor.</div>@endif
+<div class="v2-metrics" data-tour="student-dashboard">@foreach([[$open->count(), 'Atividades a fazer'], [$overdue->count(), 'Prazos encerrados'], [$results->count(), 'Resultados recentes']] as [$value, $label])<article class="card"><span class="metric">{{ $value }}</span><span>{{ $label }}</span></article>@endforeach</div>
+<x-context-help title="Entenda os números do painel">Atividades a fazer ainda aceitam respostas; prazos encerrados já não aceitam envio, salvo se o professor reabrir. Resultados recentes incluem apenas notas publicadas pelo professor.</x-context-help>
+<section class="v2-section"><h2>Atividades a fazer</h2><div class="v2-activity-grid">@forelse($open as $item)
+@php($submission = $item->submissions->first())
+<article class="card p-4"><small>{{ $item->classroom->name }}</small><h3 class="h5">{{ $item->title }}</h3><p>{{ $submission?->reopened_until?->isFuture() ? 'Reaberta até '.$submission->reopened_until->format('d/m H:i') : ($item->deadline_at ? 'Prazo: '.$item->deadline_at->format('d/m H:i') : 'Sem prazo de entrega') }}</p><a class="btn btn-primary" href="{{ route('student.activities.show', $item) }}">{{ $submission ? 'Continuar rascunho' : 'Começar atividade' }}</a></article>
+@empty<p class="v2-empty">Tudo em dia! Nenhuma atividade pendente disponível.</p>@endforelse</div></section>
+<section class="card p-4 mt-4"><h2 class="h4">Prazos encerrados</h2><ul class="v2-link-list">@forelse($overdue as $item)<li><strong>{{ $item->title }}</strong><span>{{ $item->classroom->name }} · Prazo encerrado em {{ $item->deadline_at->format('d/m H:i') }}</span></li>@empty<li>Nenhuma entrega pendente com prazo encerrado.</li>@endforelse</ul></section>
+<section class="v2-section" data-tour="student-results"><h2>Últimos resultados publicados</h2><div class="v2-activity-grid">@forelse($results as $item)@php($submission = $item->submissions->first())<article class="card p-4"><small>{{ $item->classroom->name }}</small><h3 class="h5">{{ $item->title }}</h3><p class="metric fs-3">{{ ($submission->final_score === null ? '—' : number_format($submission->final_score, 2, ',', '.')) }} / {{ number_format($item->total_score, 2, ',', '.') }}</p><a href="{{ route('student.submissions.result', $submission) }}">Ver nota e feedback</a></article>@empty<p class="v2-empty">Seus resultados aparecerão aqui quando o professor os publicar.</p>@endforelse</div></section>
+@endsection
